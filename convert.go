@@ -20,6 +20,7 @@ func createPullRequestInfo(pr *git.GitPullRequest) PullRequestInfo {
 		id:        derefInt(pr.PullRequestId),
 		title:     derefString(pr.Title),
 		creator:   derefString(pr.CreatedBy.DisplayName),
+		creatorID: derefString(pr.CreatedBy.Id),
 		IsDraft:   derefBool(pr.IsDraft),
 		reviewers: reviewers,
 	}

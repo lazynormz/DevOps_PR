@@ -18,6 +18,7 @@ type PullRequestInfo struct {
 	id        int
 	title     string
 	creator   string
+	creatorID string
 	IsDraft   bool
 	reviewers []PullrequestReviewer
 }
@@ -27,7 +28,7 @@ func main() {
 	organization := "2care4"
 	project := "IT2care4"
 
-	PAT := "EwqSbpHwptodPbag810103rVwkeRRBgsrZwn41cGQ5cz7F13mvnSJQQJ99BHACAAAAAsNLvJAAASAZDO2bdb"
+	PAT := "EgR19izSvARX8dWlmIWyoZ0YT1Dggjl0S3uTFhYhkCKk96ptpXGLJQQJ99BHACAAAAAsNLvJAAASAZDO2jRi"
 
 	fullUrl := baseAddress + "/" + organization + "/"
 
@@ -44,14 +45,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	for _, pr := range pullRequests {
-		if pr.IsDraft {
-			continue
-		}
-
-		printPullRequest(pr)
+	userID, err := GetCurrentUserID(PAT)
+	if err != nil {
+		// Instead of panicking, launch TUI with error message
+		RunTUIWithError(pullRequests, err.Error())
+		return
 	}
+	RunTUI(pullRequests, userID)
 }
 
 // printPullRequest prints details of a pull request
