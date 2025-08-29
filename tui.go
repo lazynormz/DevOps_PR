@@ -2,16 +2,43 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 var (
-	prGreen       = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green
-	draftGray     = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // muted gray
-	selectedStyle = lipgloss.NewStyle().Bold(true)
+	prGreen          = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green
+	draftGray        = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // muted gray
+	selectedStyle    = lipgloss.NewStyle().Bold(true)
+	boxStyle         = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).Margin(0, 1)
+	reviewerBox      = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).Margin(1, 1)
+	reviewerName     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5")).Width(20)
+	requiredStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true).Width(9)
+	voteStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Width(10)
+	idStyle          = lipgloss.NewStyle().Faint(true).Width(24)
+	sepStyle         = lipgloss.NewStyle().Faint(true)
+	requiredRowStyle = lipgloss.NewStyle().Background(lipgloss.Color("8")).Bold(true)
+	titleStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("4")).Align(lipgloss.Center).MarginBottom(1).Height(2)
 )
+
+func voteLabel(v int) string {
+	switch v {
+	case 10:
+		return "Approved"
+	case 5:
+		return "Suggest"
+	case 0:
+		return "No Vote"
+	case -5:
+		return "Waiting"
+	case -10:
+		return "Rejected"
+	default:
+		return fmt.Sprintf("%d", v)
+	}
+}
 
 type tuiModel struct {
 	prs        []PullRequestInfo
@@ -19,11 +46,12 @@ type tuiModel struct {
 	showDrafts bool
 	showMine   bool
 	userID     string
+	width      int
+	height     int
 }
 
 func initialModel(prs []PullRequestInfo, userID string) tuiModel {
-	// By default, hide user's own PRs (showMine = true)
-	return tuiModel{prs: prs, selected: 0, showDrafts: false, showMine: true, userID: userID}
+	return tuiModel{prs: prs, selected: 0, showDrafts: false, showMine: true, userID: userID, width: 0, height: 0}
 }
 
 func (m tuiModel) filteredPRs() []PullRequestInfo {
@@ -51,7 +79,7 @@ func (m tuiModel) filteredPRs() []PullRequestInfo {
 }
 
 func (m tuiModel) Init() tea.Cmd {
-	return nil
+	return tea.EnterAltScreen
 }
 
 func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -75,6 +103,9 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "esc", "ctrl+c":
 			return m, tea.Quit
 		}
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
 	}
 	return m, nil
 }
@@ -92,38 +123,110 @@ func (m tuiModel) View() string {
 			}
 		}
 	}
-	view := "Open Pull Requests (↑/↓ to navigate, d to toggle drafts, m to toggle mine, q to quit)\n\n"
-	if nonDraftCount > 0 && nonDraftCount == mineCount {
-		view += "No new pull requests. All active PRs are yours.\n\n"
-	}
+	mainArea := ""
 	if len(prs) == 0 {
-		return view + "No open pull requests. Press q to quit."
-	}
-	for i, pr := range prs {
-		cursor := " "
-		if i == m.selected {
-			cursor = ">"
+		msg := "No open pull requests."
+		if nonDraftCount == mineCount && nonDraftCount > 0 {
+			msg = "No open pull requests except your own."
 		}
-		mode := ""
-		var prLine string
-		if pr.IsDraft {
-			mode = "[Draft] "
-			prLine = draftGray.Render(fmt.Sprintf("%s [%d] %s%s (by %s)", cursor, pr.id, mode, pr.title, pr.creator))
-		} else {
-			prLine = prGreen.Render(fmt.Sprintf("%s [%d] %s%s (by %s)", cursor, pr.id, mode, pr.title, pr.creator))
+		mainArea = lipgloss.NewStyle().Width(m.width).Height(m.height-2).Align(lipgloss.Center, lipgloss.Center).Render(msg)
+	} else {
+		// Calculate max width for the PR line inside the box
+		frameWidth, _ := boxStyle.GetFrameSize()
+		maxBoxWidth := m.width / 2
+		usableWidth := maxBoxWidth - frameWidth
+		prLines := make([]string, len(prs))
+		for i, pr := range prs {
+			cursor := " "
+			if i == m.selected {
+				cursor = ">"
+			}
+			mode := ""
+			if pr.IsDraft {
+				mode = "[Draft] "
+			}
+			idStr := fmt.Sprintf("[%d]", pr.id)
+			creatorStr := fmt.Sprintf("(by %s)", pr.creator)
+			staticLen := len(cursor) + 1 + len(idStr) + 1 + len(mode) + 1 + len(creatorStr) + 1 // spaces between
+			maxTitleLen := usableWidth - staticLen
+			title := pr.title
+			if maxTitleLen <= 0 {
+				title = ""
+			} else if len(title) > maxTitleLen {
+				title = title[:maxTitleLen-3] + "..."
+			}
+			prLine := fmt.Sprintf("%s %s %s%s %s", cursor, idStr, mode, title, creatorStr)
+			if len(prLine) > usableWidth {
+				// Cut off from the right, but always keep ID and creator
+				cutLen := usableWidth - len(creatorStr) - 1 // space before creatorStr
+				if cutLen > 0 {
+					prLine = prLine[:cutLen] + " " + creatorStr
+				} else {
+					prLine = cursor + " " + idStr + " " + creatorStr
+				}
+			}
+			if pr.IsDraft {
+				prLine = draftGray.Render(prLine)
+			} else {
+				prLine = prGreen.Render(prLine)
+			}
+			if i == m.selected {
+				prLine = selectedStyle.Render(prLine)
+			}
+			prLines[i] = prLine
 		}
-		if i == m.selected {
-			prLine = selectedStyle.Render(prLine)
+		prBox := boxStyle.Width(maxBoxWidth).Align(lipgloss.Left).Render(lipgloss.JoinVertical(lipgloss.Left, prLines...))
+		mainArea += lipgloss.Place(m.width, m.height/2, lipgloss.Center, lipgloss.Center, prBox)
+		selectedPR := prs[m.selected]
+		// Title area (big, centered)
+		titleArea := titleStyle.Render(selectedPR.title)
+		// Reviewer table area
+		reviewerLines := []string{"Reviewers:",
+			sepStyle.Render("┌" + strings.Repeat("─", 20) + "┬" + strings.Repeat("─", 9) + "┬" + strings.Repeat("─", 10) + "┬" + strings.Repeat("─", 24) + "┐"),
+			"│" + reviewerName.Render("Name") + "│" + requiredStyle.Render("Required") + "│" + voteStyle.Render("Vote") + "│" + idStyle.Render("ID") + "│",
+			sepStyle.Render("├" + strings.Repeat("─", 20) + "┼" + strings.Repeat("─", 9) + "┼" + strings.Repeat("─", 10) + "┼" + strings.Repeat("─", 24) + "┤"),
 		}
-		view += prLine + "\n"
+		ignoreIDs := map[string]bool{
+			"1809cf47-1683-62b4-ab66-9dbfd3d291d6": true,
+			"59e23168-dd18-4b40-9065-f3182d63ff1a": true,
+		}
+		for _, rev := range selectedPR.reviewers {
+			if ignoreIDs[rev.id] {
+				continue
+			}
+			nameStr := rev.displayName
+			maxNameLen := 20
+			if len(nameStr) > maxNameLen {
+				nameStr = nameStr[:maxNameLen-3] + "..."
+			}
+			name := reviewerName.Render(nameStr)
+			required := requiredStyle.Render("")
+			if rev.isRequired {
+				required = requiredStyle.Foreground(lipgloss.Color("2")).Render("✔ Yes")
+			}
+			vote := voteStyle.Render(voteLabel(rev.vote))
+			idStr := rev.id
+			maxIdLen := 24
+			if len(idStr) > maxIdLen {
+				idStr = idStr[:maxIdLen-3] + "..."
+			}
+			id := idStyle.Render(idStr)
+			row := "│" + name + "│" + required + "│" + vote + "│" + id + "│"
+			reviewerLines = append(reviewerLines, row)
+		}
+		reviewerLines = append(reviewerLines, sepStyle.Render("└"+strings.Repeat("─", 20)+"┴"+strings.Repeat("─", 9)+"┴"+strings.Repeat("─", 10)+"┴"+strings.Repeat("─", 24)+"┘"))
+		// Combine title and reviewers in the box
+		reviewerBoxStr := reviewerBox.Width(maxBoxWidth).Align(lipgloss.Left).Render(
+			titleArea + "\n" + lipgloss.JoinVertical(lipgloss.Left, reviewerLines...))
+		mainArea += "\n" + lipgloss.Place(m.width, m.height/2, lipgloss.Center, lipgloss.Top, reviewerBoxStr)
 	}
-	view += "\n"
-	selectedPR := prs[m.selected]
-	view += fmt.Sprintf("Selected PR: %s\nReviewers:\n", selectedPR.title)
-	for _, rev := range selectedPR.reviewers {
-		view += fmt.Sprintf(" - %s (ID: %s, Required: %t, Vote: %d)\n", rev.displayName, rev.id, rev.isRequired, rev.vote)
+	// Instructions at the bottom
+	menuBox := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(0, 2)
+	instructions := "  ↑/↓ to navigate | d: toggle drafts | m: show/hide your own PRs | q: quit  "
+	if m.width > 0 {
+		instructions = lipgloss.PlaceHorizontal(m.width, lipgloss.Center, menuBox.Render(instructions))
 	}
-	return view
+	return mainArea + "\n" + instructions
 }
 
 // RunTUIWithError displays an error message in the TUI and exits on key press
