@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/git"
@@ -24,11 +25,16 @@ type PullRequestInfo struct {
 }
 
 func main() {
+	_ = DeletePATIfDebug() // Delete PAT if DEBUG=1
 	baseAddress := "https://dev.azure.com"
 	organization := "2care4"
 	project := "IT2care4"
 
-	PAT := "EgR19izSvARX8dWlmIWyoZ0YT1Dggjl0S3uTFhYhkCKk96ptpXGLJQQJ99BHACAAAAAsNLvJAAASAZDO2jRi"
+	PAT, err := EnsurePAT()
+	if err != nil {
+		fmt.Println("Error retrieving PAT:", err)
+		return
+	}
 
 	fullUrl := baseAddress + "/" + organization + "/"
 
