@@ -1,6 +1,8 @@
 # AzurePR TUI
 ## 🤔 What is this?
-![Uploading image.png…]()
+
+<img width="1665" height="934" alt="image" src="https://github.com/user-attachments/assets/9f9350e6-290f-4195-9220-fabbfecfe2b0" />
+
 
 Microsoft broke the PR overview in Azure DevOps boards (thanks, Satya 🙃), so I hacked together a terminal UI that shows you open PRs and some quick info.
 Runs in your Windows terminal, just a single .exe.
