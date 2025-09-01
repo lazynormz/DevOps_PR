@@ -210,6 +210,7 @@ func (model tuiModel) View() string {
 		mainArea += lipgloss.Place(model.width, model.height/2, lipgloss.Center, lipgloss.Center, prBox)
 		selectedPR := prs[model.selected]
 		titleArea := titleStyle.Render(selectedPR.title)
+		repoArea := lipgloss.NewStyle().Faint(true).Align(lipgloss.Center).Render(selectedPR.repositoryName)
 		reviewerLines := []string{"Reviewers:",
 			sepStyle.Render("┌" + strings.Repeat("─", 20) + "┬" + strings.Repeat("─", 9) + "┬" + strings.Repeat("─", 10) + "┬" + strings.Repeat("─", 24) + "┐"),
 			"│" + reviewerName.Render("Name") + "│" + requiredStyle.Render("Required") + "│" + voteStyle.Render("Vote") + "│" + idStyle.Render("ID") + "│",
@@ -246,7 +247,7 @@ func (model tuiModel) View() string {
 		reviewerLines = append(reviewerLines, sepStyle.Render("└"+strings.Repeat("─", 20)+"┴"+strings.Repeat("─", 9)+"┴"+strings.Repeat("─", 10)+"┴"+strings.Repeat("─", 24)+"┘"))
 
 		reviewerBoxStr := reviewerBox.Width(maxBoxWidth).Align(lipgloss.Left).Render(
-			titleArea + "\n" + lipgloss.JoinVertical(lipgloss.Left, reviewerLines...))
+			titleArea + "\n" + repoArea + "\n" + lipgloss.JoinVertical(lipgloss.Left, reviewerLines...))
 		mainArea += "\n" + lipgloss.Place(model.width, model.height/2, lipgloss.Center, lipgloss.Top, reviewerBoxStr)
 	}
 
