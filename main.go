@@ -32,18 +32,30 @@ func main() {
 		if err := DeletePAT(); err != nil {
 			fmt.Println("Error deleting PAT:", err)
 		}
-		fmt.Println("PAT has been reset. Please enter a new PAT when prompted.")
+		if err := DeleteOrganization(); err != nil {
+			fmt.Println("Error deleting organization:", err)
+		}
+		if err := DeleteProject(); err != nil {
+			fmt.Println("Error deleting project:", err)
+		}
+		fmt.Println("PAT, organization, and project have been reset. Please enter new values when prompted.")
 	}
 	baseAddress := "https://dev.azure.com"
-	organization := "2care4"
-	project := "IT2care4"
-
+	organization, err := EnsureOrganization()
+	if err != nil {
+		fmt.Println("Error retrieving organization:", err)
+		return
+	}
+	project, err := EnsureProject()
+	if err != nil {
+		fmt.Println("Error retrieving project:", err)
+		return
+	}
 	PAT, err := EnsurePAT()
 	if err != nil {
 		fmt.Println("Error retrieving PAT:", err)
 		return
 	}
-
 	fullUrl := baseAddress + "/" + organization + "/"
 
 	ctx := context.Background()

@@ -45,68 +45,65 @@ type tuiModel struct {
 	selected        int
 	showDrafts      bool
 	showMine        bool
-	showNotReviewer bool // new: show PRs where user is NOT a reviewer
+	showNotReviewer bool
 	userID          string
 	width           int
 	height          int
 }
 
-func initialModel(prs []PullRequestInfo, userID string) tuiModel {
-	return tuiModel{prs: prs, selected: 0, showDrafts: false, showMine: true, showNotReviewer: false, userID: userID, width: 0, height: 0}
-}
-
 func (m tuiModel) filteredPRs() []PullRequestInfo {
-	filtered := m.prs
-	if !m.showDrafts {
-		var tmp []PullRequestInfo
-		for _, pr := range filtered {
-			if !pr.IsDraft {
-				tmp = append(tmp, pr)
-			}
-		}
-		filtered = tmp
-	}
-	if m.showMine {
-		// Hide my own PRs, show only PRs created by others
-		var others []PullRequestInfo
-		for _, pr := range filtered {
-			if pr.creatorID != m.userID {
-				others = append(others, pr)
-			}
-		}
-		filtered = others
-	}
-	// Filter by reviewer status
+	var filteredPRs []PullRequestInfo
+	seenPRs := make(map[int]bool)
+
 	if m.showNotReviewer {
-		// Show PRs where user is NOT a reviewer
-		var notReviewer []PullRequestInfo
-		for _, pr := range filtered {
-			isReviewer := false
-			for _, rev := range pr.reviewers {
-				if rev.id == m.userID {
-					isReviewer = true
-					break
-				}
+		for _, pullRequest := range m.prs {
+			if !m.showDrafts && pullRequest.IsDraft {
+				continue
 			}
-			if !isReviewer {
-				notReviewer = append(notReviewer, pr)
+			if !m.showMine && pullRequest.creatorID == m.userID {
+				continue
+			}
+			if !seenPRs[pullRequest.id] {
+				filteredPRs = append(filteredPRs, pullRequest)
+				seenPRs[pullRequest.id] = true
 			}
 		}
-		filtered = notReviewer
-	} else {
-		// Show PRs where user IS a reviewer
-		var reviewerPRs []PullRequestInfo
-		for _, pr := range filtered {
-			for _, rev := range pr.reviewers {
-				if rev.id == m.userID {
-					reviewerPRs = append(reviewerPRs, pr)
-					break
-				}
-			}
-		}
-		filtered = reviewerPRs
+		return filteredPRs
 	}
-	return filtered
+
+	for _, pullRequest := range m.prs {
+		if !m.showDrafts && pullRequest.IsDraft {
+			continue
+		}
+		if pullRequest.creatorID == m.userID && !m.showMine {
+			continue
+		}
+		isCurrentUserReviewer := false
+		for _, reviewer := range pullRequest.reviewers {
+			if reviewer.id == m.userID {
+				isCurrentUserReviewer = true
+				break
+			}
+		}
+		if isCurrentUserReviewer && !seenPRs[pullRequest.id] {
+			filteredPRs = append(filteredPRs, pullRequest)
+			seenPRs[pullRequest.id] = true
+		}
+	}
+
+	if m.showMine {
+		for _, pullRequest := range m.prs {
+			if pullRequest.creatorID == m.userID && !pullRequest.IsDraft && !seenPRs[pullRequest.id] {
+				filteredPRs = append(filteredPRs, pullRequest)
+				seenPRs[pullRequest.id] = true
+			}
+			if m.showDrafts && pullRequest.creatorID == m.userID && pullRequest.IsDraft && !seenPRs[pullRequest.id] {
+				filteredPRs = append(filteredPRs, pullRequest)
+				seenPRs[pullRequest.id] = true
+			}
+		}
+	}
+	return filteredPRs
 }
 
 func (m tuiModel) Init() tea.Cmd {
@@ -304,6 +301,19 @@ func (m errorTUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m errorTUIModel) View() string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true).Render(
 		"Error: " + m.errorMsg + "\nPress any key to exit.")
+}
+
+func initialModel(prs []PullRequestInfo, userID string) tuiModel {
+	return tuiModel{
+		prs:             prs,
+		selected:        0,
+		showDrafts:      false,
+		showMine:        false,
+		showNotReviewer: false,
+		userID:          userID,
+		width:           0,
+		height:          0,
+	}
 }
 
 func RunTUI(prs []PullRequestInfo, userID string) {
