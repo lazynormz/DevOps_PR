@@ -96,6 +96,7 @@ func main() {
 			RunTUIWithError(pullRequests, err.Error())
 			return
 		}
+		// Pass all PRs to the TUI, let it handle filtering
 		RunTUI(pullRequests, userID)
 		return
 	}
