@@ -1,3 +1,6 @@
+## What is this?
+Because Microsoft recently broke their Azure DevOps boards in regards to their PR overview, I created this little TUI that gives a quick overview of open PRs and other quick-info.
+
 ## Requirements
 Required permissions for the PAT:
 - Code (Read)
