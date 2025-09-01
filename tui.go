@@ -45,68 +45,70 @@ type tuiModel struct {
 	selected        int
 	showDrafts      bool
 	showMine        bool
-	showNotReviewer bool // new: show PRs where user is NOT a reviewer
+	showNotReviewer bool
 	userID          string
 	width           int
 	height          int
 }
 
-func initialModel(prs []PullRequestInfo, userID string) tuiModel {
-	return tuiModel{prs: prs, selected: 0, showDrafts: false, showMine: true, showNotReviewer: false, userID: userID, width: 0, height: 0}
-}
-
 func (m tuiModel) filteredPRs() []PullRequestInfo {
-	filtered := m.prs
-	if !m.showDrafts {
-		var tmp []PullRequestInfo
-		for _, pr := range filtered {
-			if !pr.IsDraft {
-				tmp = append(tmp, pr)
-			}
-		}
-		filtered = tmp
-	}
-	if m.showMine {
-		// Hide my own PRs, show only PRs created by others
-		var others []PullRequestInfo
-		for _, pr := range filtered {
-			if pr.creatorID != m.userID {
-				others = append(others, pr)
-			}
-		}
-		filtered = others
-	}
-	// Filter by reviewer status
+	var result []PullRequestInfo
+	prSeen := make(map[int]bool)
 	if m.showNotReviewer {
-		// Show PRs where user is NOT a reviewer
-		var notReviewer []PullRequestInfo
-		for _, pr := range filtered {
-			isReviewer := false
-			for _, rev := range pr.reviewers {
-				if rev.id == m.userID {
-					isReviewer = true
-					break
-				}
+		for _, pr := range m.prs {
+			// Respect d and m toggles
+			if !m.showDrafts && pr.IsDraft {
+				continue
 			}
-			if !isReviewer {
-				notReviewer = append(notReviewer, pr)
+			if !m.showMine && pr.creatorID == m.userID {
+				continue
 			}
-		}
-		filtered = notReviewer
-	} else {
-		// Show PRs where user IS a reviewer
-		var reviewerPRs []PullRequestInfo
-		for _, pr := range filtered {
-			for _, rev := range pr.reviewers {
-				if rev.id == m.userID {
-					reviewerPRs = append(reviewerPRs, pr)
-					break
-				}
+			if !prSeen[pr.id] {
+				result = append(result, pr)
+				prSeen[pr.id] = true
 			}
 		}
-		filtered = reviewerPRs
+		return result
 	}
-	return filtered
+	// Start with PRs where I am a reviewer
+	for _, pr := range m.prs {
+		// Exclude drafts unless d is ON
+		if !m.showDrafts && pr.IsDraft {
+			continue
+		}
+		// Exclude PRs I created unless m is ON
+		if pr.creatorID == m.userID && !m.showMine {
+			continue
+		}
+		// Only include if I am a reviewer
+		isReviewer := false
+		for _, rev := range pr.reviewers {
+			if rev.id == m.userID {
+				isReviewer = true
+				break
+			}
+		}
+		if isReviewer && !prSeen[pr.id] {
+			result = append(result, pr)
+			prSeen[pr.id] = true
+		}
+	}
+	// If m is ON, also add my own PRs (active, not drafts) not already included
+	if m.showMine {
+		for _, pr := range m.prs {
+			// Add my own active PRs
+			if pr.creatorID == m.userID && !pr.IsDraft && !prSeen[pr.id] {
+				result = append(result, pr)
+				prSeen[pr.id] = true
+			}
+			// If d is ON, also add my own draft PRs
+			if m.showDrafts && pr.creatorID == m.userID && pr.IsDraft && !prSeen[pr.id] {
+				result = append(result, pr)
+				prSeen[pr.id] = true
+			}
+		}
+	}
+	return result
 }
 
 func (m tuiModel) Init() tea.Cmd {
@@ -304,6 +306,19 @@ func (m errorTUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m errorTUIModel) View() string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true).Render(
 		"Error: " + m.errorMsg + "\nPress any key to exit.")
+}
+
+func initialModel(prs []PullRequestInfo, userID string) tuiModel {
+	return tuiModel{
+		prs:             prs,
+		selected:        0,
+		showDrafts:      false,
+		showMine:        false,
+		showNotReviewer: false,
+		userID:          userID,
+		width:           0,
+		height:          0,
+	}
 }
 
 func RunTUI(prs []PullRequestInfo, userID string) {
