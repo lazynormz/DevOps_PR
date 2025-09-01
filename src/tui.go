@@ -211,6 +211,8 @@ func (m tuiModel) View() string {
 		selectedPR := prs[m.selected]
 		// Title area (big, centered)
 		titleArea := titleStyle.Render(selectedPR.title)
+		// Repository name (smaller, faint, under title)
+		repoArea := lipgloss.NewStyle().Faint(true).Align(lipgloss.Center).Render(selectedPR.repositoryName)
 		// Reviewer table area
 		reviewerLines := []string{"Reviewers:",
 			sepStyle.Render("┌" + strings.Repeat("─", 20) + "┬" + strings.Repeat("─", 9) + "┬" + strings.Repeat("─", 10) + "┬" + strings.Repeat("─", 24) + "┐"),
@@ -248,7 +250,7 @@ func (m tuiModel) View() string {
 		reviewerLines = append(reviewerLines, sepStyle.Render("└"+strings.Repeat("─", 20)+"┴"+strings.Repeat("─", 9)+"┴"+strings.Repeat("─", 10)+"┴"+strings.Repeat("─", 24)+"┘"))
 		// Combine title and reviewers in the box
 		reviewerBoxStr := reviewerBox.Width(maxBoxWidth).Align(lipgloss.Left).Render(
-			titleArea + "\n" + lipgloss.JoinVertical(lipgloss.Left, reviewerLines...))
+			titleArea + "\n" + repoArea + "\n" + lipgloss.JoinVertical(lipgloss.Left, reviewerLines...))
 		mainArea += "\n" + lipgloss.Place(m.width, m.height/2, lipgloss.Center, lipgloss.Top, reviewerBoxStr)
 	}
 	// Instructions at the bottom
