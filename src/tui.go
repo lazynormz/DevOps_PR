@@ -23,8 +23,8 @@ var (
 	titleStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("4")).Align(lipgloss.Center).MarginBottom(1).Height(2)
 )
 
-func voteLabel(v int) string {
-	switch v {
+func voteLabel(vote int) string {
+	switch vote {
 	case 10:
 		return "Approved"
 	case 5:
@@ -36,7 +36,7 @@ func voteLabel(v int) string {
 	case -10:
 		return "Rejected"
 	default:
-		return fmt.Sprintf("%d", v)
+		return fmt.Sprintf("%d", vote)
 	}
 }
 
@@ -51,16 +51,16 @@ type tuiModel struct {
 	height          int
 }
 
-func (m tuiModel) filteredPRs() []PullRequestInfo {
+func (model tuiModel) filteredPRs() []PullRequestInfo {
 	var filteredPRs []PullRequestInfo
 	seenPRs := make(map[int]bool)
 
-	if m.showNotReviewer {
-		for _, pullRequest := range m.prs {
-			if !m.showDrafts && pullRequest.IsDraft {
+	if model.showNotReviewer {
+		for _, pullRequest := range model.prs {
+			if !model.showDrafts && pullRequest.IsDraft {
 				continue
 			}
-			if !m.showMine && pullRequest.creatorID == m.userID {
+			if !model.showMine && pullRequest.creatorID == model.userID {
 				continue
 			}
 			if !seenPRs[pullRequest.id] {
@@ -71,16 +71,16 @@ func (m tuiModel) filteredPRs() []PullRequestInfo {
 		return filteredPRs
 	}
 
-	for _, pullRequest := range m.prs {
-		if !m.showDrafts && pullRequest.IsDraft {
+	for _, pullRequest := range model.prs {
+		if !model.showDrafts && pullRequest.IsDraft {
 			continue
 		}
-		if pullRequest.creatorID == m.userID && !m.showMine {
+		if pullRequest.creatorID == model.userID && !model.showMine {
 			continue
 		}
 		isCurrentUserReviewer := false
 		for _, reviewer := range pullRequest.reviewers {
-			if reviewer.id == m.userID {
+			if reviewer.id == model.userID {
 				isCurrentUserReviewer = true
 				break
 			}
@@ -91,13 +91,13 @@ func (m tuiModel) filteredPRs() []PullRequestInfo {
 		}
 	}
 
-	if m.showMine {
-		for _, pullRequest := range m.prs {
-			if pullRequest.creatorID == m.userID && !pullRequest.IsDraft && !seenPRs[pullRequest.id] {
+	if model.showMine {
+		for _, pullRequest := range model.prs {
+			if pullRequest.creatorID == model.userID && !pullRequest.IsDraft && !seenPRs[pullRequest.id] {
 				filteredPRs = append(filteredPRs, pullRequest)
 				seenPRs[pullRequest.id] = true
 			}
-			if m.showDrafts && pullRequest.creatorID == m.userID && pullRequest.IsDraft && !seenPRs[pullRequest.id] {
+			if model.showDrafts && pullRequest.creatorID == model.userID && pullRequest.IsDraft && !seenPRs[pullRequest.id] {
 				filteredPRs = append(filteredPRs, pullRequest)
 				seenPRs[pullRequest.id] = true
 			}
@@ -106,70 +106,70 @@ func (m tuiModel) filteredPRs() []PullRequestInfo {
 	return filteredPRs
 }
 
-func (m tuiModel) Init() tea.Cmd {
+func (model tuiModel) Init() tea.Cmd {
 	return tea.EnterAltScreen
 }
 
-func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+func (model tuiModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message := message.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch message.String() {
 		case "up", "k":
-			if m.selected > 0 {
-				m.selected--
+			if model.selected > 0 {
+				model.selected--
 			}
 		case "down", "j":
-			if m.selected < len(m.filteredPRs())-1 {
-				m.selected++
+			if model.selected < len(model.filteredPRs())-1 {
+				model.selected++
 			}
 		case "d":
-			m.showDrafts = !m.showDrafts
-			m.selected = 0
+			model.showDrafts = !model.showDrafts
+			model.selected = 0
 		case "m":
-			m.showMine = !m.showMine
-			m.selected = 0
+			model.showMine = !model.showMine
+			model.selected = 0
 		case "r":
-			m.showNotReviewer = !m.showNotReviewer
-			m.selected = 0
+			model.showNotReviewer = !model.showNotReviewer
+			model.selected = 0
 		case "q", "esc", "ctrl+c":
-			return m, tea.Quit
+			return model, tea.Quit
 		}
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		model.width = message.Width
+		model.height = message.Height
 	}
-	return m, nil
+	return model, nil
 }
 
-func (m tuiModel) View() string {
-	prs := m.filteredPRs()
+func (model tuiModel) View() string {
+	prs := model.filteredPRs()
 	// Check if all non-draft PRs are mine
 	nonDraftCount := 0
 	mineCount := 0
-	for _, pr := range m.prs {
+	for _, pr := range model.prs {
 		if !pr.IsDraft {
 			nonDraftCount++
-			if pr.creatorID == m.userID {
+			if pr.creatorID == model.userID {
 				mineCount++
 			}
 		}
 	}
 	mainArea := ""
 	if len(prs) == 0 {
-		msg := "No open pull requests where you are set as a reviewer."
-		if m.showNotReviewer {
-			msg = "No open pull requests where you are NOT set as a reviewer."
+		message := "No open pull requests where you are set as a reviewer."
+		if model.showNotReviewer {
+			message = "No open pull requests where you are NOT set as a reviewer."
 		}
-		mainArea = lipgloss.NewStyle().Width(m.width).Height(m.height-2).Align(lipgloss.Center, lipgloss.Center).Render(msg)
+		mainArea = lipgloss.NewStyle().Width(model.width).Height(model.height-2).Align(lipgloss.Center, lipgloss.Center).Render(message)
 	} else {
 		// Calculate max width for the PR line inside the box
 		frameWidth, _ := boxStyle.GetFrameSize()
-		maxBoxWidth := m.width / 2
+		maxBoxWidth := model.width / 2
 		usableWidth := maxBoxWidth - frameWidth
 		prLines := make([]string, len(prs))
-		for i, pr := range prs {
+		for index, pr := range prs {
 			cursor := " "
-			if i == m.selected {
+			if index == model.selected {
 				cursor = ">"
 			}
 			mode := ""
@@ -201,17 +201,15 @@ func (m tuiModel) View() string {
 			} else {
 				prLine = prGreen.Render(prLine)
 			}
-			if i == m.selected {
+			if index == model.selected {
 				prLine = selectedStyle.Render(prLine)
 			}
-			prLines[i] = prLine
+			prLines[index] = prLine
 		}
 		prBox := boxStyle.Width(maxBoxWidth).Align(lipgloss.Left).Render(lipgloss.JoinVertical(lipgloss.Left, prLines...))
-		mainArea += lipgloss.Place(m.width, m.height/2, lipgloss.Center, lipgloss.Center, prBox)
-		selectedPR := prs[m.selected]
-		// Title area (big, centered)
+		mainArea += lipgloss.Place(model.width, model.height/2, lipgloss.Center, lipgloss.Center, prBox)
+		selectedPR := prs[model.selected]
 		titleArea := titleStyle.Render(selectedPR.title)
-		// Reviewer table area
 		reviewerLines := []string{"Reviewers:",
 			sepStyle.Render("┌" + strings.Repeat("─", 20) + "┬" + strings.Repeat("─", 9) + "┬" + strings.Repeat("─", 10) + "┬" + strings.Repeat("─", 24) + "┐"),
 			"│" + reviewerName.Render("Name") + "│" + requiredStyle.Render("Required") + "│" + voteStyle.Render("Vote") + "│" + idStyle.Render("ID") + "│",
@@ -221,22 +219,22 @@ func (m tuiModel) View() string {
 			"1809cf47-1683-62b4-ab66-9dbfd3d291d6": true,
 			"59e23168-dd18-4b40-9065-f3182d63ff1a": true,
 		}
-		for _, rev := range selectedPR.reviewers {
-			if ignoreIDs[rev.id] {
+		for _, reviewer := range selectedPR.reviewers {
+			if ignoreIDs[reviewer.id] {
 				continue
 			}
-			nameStr := rev.displayName
+			nameStr := reviewer.displayName
 			maxNameLen := 20
 			if len(nameStr) > maxNameLen {
 				nameStr = nameStr[:maxNameLen-3] + "..."
 			}
 			name := reviewerName.Render(nameStr)
 			required := requiredStyle.Render("")
-			if rev.isRequired {
+			if reviewer.isRequired {
 				required = requiredStyle.Foreground(lipgloss.Color("2")).Render("✔ Yes")
 			}
-			vote := voteStyle.Render(voteLabel(rev.vote))
-			idStr := rev.id
+			vote := voteStyle.Render(voteLabel(reviewer.vote))
+			idStr := reviewer.id
 			maxIdLen := 24
 			if len(idStr) > maxIdLen {
 				idStr = idStr[:maxIdLen-3] + "..."
@@ -246,33 +244,32 @@ func (m tuiModel) View() string {
 			reviewerLines = append(reviewerLines, row)
 		}
 		reviewerLines = append(reviewerLines, sepStyle.Render("└"+strings.Repeat("─", 20)+"┴"+strings.Repeat("─", 9)+"┴"+strings.Repeat("─", 10)+"┴"+strings.Repeat("─", 24)+"┘"))
-		// Combine title and reviewers in the box
+
 		reviewerBoxStr := reviewerBox.Width(maxBoxWidth).Align(lipgloss.Left).Render(
 			titleArea + "\n" + lipgloss.JoinVertical(lipgloss.Left, reviewerLines...))
-		mainArea += "\n" + lipgloss.Place(m.width, m.height/2, lipgloss.Center, lipgloss.Top, reviewerBoxStr)
+		mainArea += "\n" + lipgloss.Place(model.width, model.height/2, lipgloss.Center, lipgloss.Top, reviewerBoxStr)
 	}
-	// Instructions at the bottom
+
 	menuBox := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(0, 2)
-	// Styles for ON/OFF
 	onStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)  // green
 	offStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true) // red
 
 	dKey := offStyle.Render("d")
-	if m.showDrafts {
+	if model.showDrafts {
 		dKey = onStyle.Render("d")
 	}
 	mKey := offStyle.Render("m")
-	if m.showMine {
+	if model.showMine {
 		mKey = onStyle.Render("m")
 	}
 	rKey := offStyle.Render("r")
-	if m.showNotReviewer {
+	if model.showNotReviewer {
 		rKey = onStyle.Render("r")
 	}
 
 	instructions := fmt.Sprintf("  ↑/↓ to navigate | %s: toggle drafts | %s: show/hide your own PRs | %s: show PRs where you are NOT a reviewer | q: quit  ", dKey, mKey, rKey)
-	if m.width > 0 {
-		instructions = lipgloss.PlaceHorizontal(m.width, lipgloss.Center, menuBox.Render(instructions))
+	if model.width > 0 {
+		instructions = lipgloss.PlaceHorizontal(model.width, lipgloss.Center, menuBox.Render(instructions))
 	}
 	return mainArea + "\n" + instructions
 }
@@ -280,27 +277,27 @@ func (m tuiModel) View() string {
 // RunTUIWithError displays an error message in the TUI and exits on key press
 func RunTUIWithError(prs []PullRequestInfo, errorMsg string) {
 	errModel := errorTUIModel{errorMsg: errorMsg}
-	p := tea.NewProgram(errModel)
-	_ = p.Start()
+	program := tea.NewProgram(errModel)
+	program.Run()
 }
 
 type errorTUIModel struct {
 	errorMsg string
 }
 
-func (m errorTUIModel) Init() tea.Cmd { return nil }
+func (model errorTUIModel) Init() tea.Cmd { return nil }
 
-func (m errorTUIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
+func (model errorTUIModel) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message.(type) {
 	case tea.KeyMsg:
-		return m, tea.Quit
+		return model, tea.Quit
 	}
-	return m, nil
+	return model, nil
 }
 
-func (m errorTUIModel) View() string {
+func (model errorTUIModel) View() string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true).Render(
-		"Error: " + m.errorMsg + "\nPress any key to exit.")
+		"Error: " + model.errorMsg + "\nPress any key to exit.")
 }
 
 func initialModel(prs []PullRequestInfo, userID string) tuiModel {
@@ -317,6 +314,6 @@ func initialModel(prs []PullRequestInfo, userID string) tuiModel {
 }
 
 func RunTUI(prs []PullRequestInfo, userID string) {
-	p := tea.NewProgram(initialModel(prs, userID))
-	_ = p.Start()
+	program := tea.NewProgram(initialModel(prs, userID))
+	program.Run()
 }
