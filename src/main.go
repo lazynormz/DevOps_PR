@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops"
@@ -18,12 +19,13 @@ type PullrequestReviewer struct {
 }
 
 type PullRequestInfo struct {
-	id        int
-	title     string
-	creator   string
-	creatorID string
-	IsDraft   bool
-	reviewers []PullrequestReviewer
+	id             int
+	title          string
+	creator        string
+	creatorID      string
+	IsDraft        bool
+	reviewers      []PullrequestReviewer
+	repositoryName string
 }
 
 func main() {
@@ -141,6 +143,7 @@ func ListOpenPullRequests(ctx context.Context, gitClient git.Client, project str
 	statusActive := git.PullRequestStatus("active")
 	for _, repo := range *repos {
 		repoIdStr := repo.Id.String()
+		repoName := derefString(repo.Name)
 		prs, err := gitClient.GetPullRequests(ctx, git.GetPullRequestsArgs{
 			RepositoryId: &repoIdStr,
 			SearchCriteria: &git.GitPullRequestSearchCriteria{
@@ -153,9 +156,13 @@ func ListOpenPullRequests(ctx context.Context, gitClient git.Client, project str
 		}
 		if prs != nil {
 			for _, pr := range *prs {
-				allPRs = append(allPRs, createPullRequestInfo(&pr))
+				allPRs = append(allPRs, createPullRequestInfo(&pr, repoName))
 			}
 		}
 	}
+	// Sort PRs by ID ascending
+	sort.Slice(allPRs, func(currentIndex, nextIndex int) bool {
+		return allPRs[currentIndex].id < allPRs[nextIndex].id
+	})
 	return allPRs, nil
 }
