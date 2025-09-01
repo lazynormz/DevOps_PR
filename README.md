@@ -1,7 +1,8 @@
 # AzurePR TUI
 ## 🤔 What is this?
 
-<img width="1665" height="934" alt="image" src="https://github.com/user-attachments/assets/9f9350e6-290f-4195-9220-fabbfecfe2b0" />
+<img width="1654" height="922" alt="image" src="https://github.com/user-attachments/assets/707746d9-d180-4f58-bfa8-8aff304773c0" />
+
 
 
 Microsoft broke the PR overview in Azure DevOps boards (thanks, Satya 🙃), so I hacked together a terminal UI that shows you open PRs and some quick info.
