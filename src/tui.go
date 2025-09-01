@@ -9,18 +9,17 @@ import (
 )
 
 var (
-	prGreen          = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green
-	draftGray        = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // muted gray
-	selectedStyle    = lipgloss.NewStyle().Bold(true)
-	boxStyle         = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).Margin(0, 1)
-	reviewerBox      = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).Margin(1, 1)
-	reviewerName     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5")).Width(20)
-	requiredStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true).Width(9)
-	voteStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Width(10)
-	idStyle          = lipgloss.NewStyle().Faint(true).Width(24)
-	sepStyle         = lipgloss.NewStyle().Faint(true)
-	requiredRowStyle = lipgloss.NewStyle().Background(lipgloss.Color("8")).Bold(true)
-	titleStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("4")).Align(lipgloss.Center).MarginBottom(1).Height(2)
+	prGreen       = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // green
+	draftGray     = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // muted gray
+	selectedStyle = lipgloss.NewStyle().Bold(true)
+	boxStyle      = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).Margin(0, 1)
+	reviewerBox   = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).Margin(1, 1)
+	reviewerName  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5")).Width(20)
+	requiredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true).Width(9)
+	voteStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Width(10)
+	idStyle       = lipgloss.NewStyle().Faint(true).Width(24)
+	sepStyle      = lipgloss.NewStyle().Faint(true)
+	titleStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("4")).Align(lipgloss.Center).MarginBottom(1).Height(2)
 )
 
 func voteLabel(vote int) string {

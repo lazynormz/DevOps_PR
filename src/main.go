@@ -116,18 +116,6 @@ func main() {
 	}
 }
 
-// printPullRequest prints details of a pull request
-func printPullRequest(pr PullRequestInfo) {
-	println("PR ID:", pr.id)
-	println("Title:", pr.title)
-	println("Creator:", pr.creator)
-	println("Reviewers:")
-	for _, rev := range pr.reviewers {
-		println(" -", rev.displayName, "(ID:", rev.id, "Required:", rev.isRequired, "Vote:", rev.vote, ")")
-	}
-	println("-----")
-}
-
 // ListOpenPullRequests lists all open pull requests in all repositories in the specified project
 func ListOpenPullRequests(ctx context.Context, gitClient git.Client, project string) ([]PullRequestInfo, error) {
 	repos, err := gitClient.GetRepositories(ctx, git.GetRepositoriesArgs{
