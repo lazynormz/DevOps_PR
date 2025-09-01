@@ -52,63 +52,58 @@ type tuiModel struct {
 }
 
 func (m tuiModel) filteredPRs() []PullRequestInfo {
-	var result []PullRequestInfo
-	prSeen := make(map[int]bool)
+	var filteredPRs []PullRequestInfo
+	seenPRs := make(map[int]bool)
+
 	if m.showNotReviewer {
-		for _, pr := range m.prs {
-			// Respect d and m toggles
-			if !m.showDrafts && pr.IsDraft {
+		for _, pullRequest := range m.prs {
+			if !m.showDrafts && pullRequest.IsDraft {
 				continue
 			}
-			if !m.showMine && pr.creatorID == m.userID {
+			if !m.showMine && pullRequest.creatorID == m.userID {
 				continue
 			}
-			if !prSeen[pr.id] {
-				result = append(result, pr)
-				prSeen[pr.id] = true
+			if !seenPRs[pullRequest.id] {
+				filteredPRs = append(filteredPRs, pullRequest)
+				seenPRs[pullRequest.id] = true
 			}
 		}
-		return result
+		return filteredPRs
 	}
-	// Start with PRs where I am a reviewer
-	for _, pr := range m.prs {
-		// Exclude drafts unless d is ON
-		if !m.showDrafts && pr.IsDraft {
+
+	for _, pullRequest := range m.prs {
+		if !m.showDrafts && pullRequest.IsDraft {
 			continue
 		}
-		// Exclude PRs I created unless m is ON
-		if pr.creatorID == m.userID && !m.showMine {
+		if pullRequest.creatorID == m.userID && !m.showMine {
 			continue
 		}
-		// Only include if I am a reviewer
-		isReviewer := false
-		for _, rev := range pr.reviewers {
-			if rev.id == m.userID {
-				isReviewer = true
+		isCurrentUserReviewer := false
+		for _, reviewer := range pullRequest.reviewers {
+			if reviewer.id == m.userID {
+				isCurrentUserReviewer = true
 				break
 			}
 		}
-		if isReviewer && !prSeen[pr.id] {
-			result = append(result, pr)
-			prSeen[pr.id] = true
+		if isCurrentUserReviewer && !seenPRs[pullRequest.id] {
+			filteredPRs = append(filteredPRs, pullRequest)
+			seenPRs[pullRequest.id] = true
 		}
 	}
-	// If m is ON, also add my own PRs (active, not drafts) not already included
+
 	if m.showMine {
-		for _, pr := range m.prs {
-			// Add my own active PRs
-			if pr.creatorID == m.userID && !pr.IsDraft && !prSeen[pr.id] {
-				result = append(result, pr)
-				prSeen[pr.id] = true
+		for _, pullRequest := range m.prs {
+			if pullRequest.creatorID == m.userID && !pullRequest.IsDraft && !seenPRs[pullRequest.id] {
+				filteredPRs = append(filteredPRs, pullRequest)
+				seenPRs[pullRequest.id] = true
 			}
-			// If d is ON, also add my own draft PRs
-			if m.showDrafts && pr.creatorID == m.userID && pr.IsDraft && !prSeen[pr.id] {
-				result = append(result, pr)
-				prSeen[pr.id] = true
+			if m.showDrafts && pullRequest.creatorID == m.userID && pullRequest.IsDraft && !seenPRs[pullRequest.id] {
+				filteredPRs = append(filteredPRs, pullRequest)
+				seenPRs[pullRequest.id] = true
 			}
 		}
 	}
-	return result
+	return filteredPRs
 }
 
 func (m tuiModel) Init() tea.Cmd {
