@@ -1,6 +1,9 @@
 ## What is this?
 Because Microsoft recently broke their Azure DevOps boards in regards to their PR overview, I created this little TUI that gives a quick overview of open PRs and other quick-info.
 
+## Why make this?
+I was bored during the weekend and decided to use ai to create this slop of a codebase. Use at own risk (should be safe, no leaks as far as I can see)
+
 ## Requirements
 Required permissions for the PAT:
 - Code (Read)
