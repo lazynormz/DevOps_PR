@@ -24,9 +24,15 @@ Option 1: Download the release
 
 Option 2: Build it yourself
 
+1) Clone the repository
+
+2) Run the command below
+
 ```
-go build -o bin/AzurePR.exe
+go build -o bin/AzurePR.exe ./src
 ```
+
+3) Drop it somewhere permanent (e.g. C:\Tools\AzurePR).
 
 ### Add it to PATH (recommended)
 
@@ -59,7 +65,7 @@ Requires Go 1.25.0
 
 Build with:
 ```
-go build -o bin/AzurePR.exe
+go build -o build/AzurePR.exe ./src
 ```
 
 # ⚠️ Notes
