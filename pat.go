@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -57,10 +56,7 @@ func EnsurePAT() (string, error) {
 	return pat, nil
 }
 
-// DeletePATIfDebug deletes the PAT from the keyring if DEBUG=1 is set
-func DeletePATIfDebug() error {
-	if os.Getenv("DEBUG") == "1" {
-		return keyring.Delete(keyringService, keyringUser)
-	}
-	return nil
+// DeletePAT deletes the PAT from the keyring
+func DeletePAT() error {
+	return keyring.Delete(keyringService, keyringUser)
 }

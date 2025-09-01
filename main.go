@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/git"
@@ -25,7 +27,13 @@ type PullRequestInfo struct {
 }
 
 func main() {
-	_ = DeletePATIfDebug() // Delete PAT if DEBUG=1
+	args := os.Args
+	if len(args) > 1 && args[1] == "reset" {
+		if err := DeletePAT(); err != nil {
+			fmt.Println("Error deleting PAT:", err)
+		}
+		fmt.Println("PAT has been reset. Please enter a new PAT when prompted.")
+	}
 	baseAddress := "https://dev.azure.com"
 	organization := "2care4"
 	project := "IT2care4"
@@ -38,26 +46,59 @@ func main() {
 
 	fullUrl := baseAddress + "/" + organization + "/"
 
-	connection := azuredevops.NewPatConnection(fullUrl, PAT)
-
 	ctx := context.Background()
 
-	gitClient, err := git.NewClient(ctx, connection)
-	if err != nil {
-		panic(err)
-	}
+	tryCount := 0
+	maxTries := 2
 
-	pullRequests, err := ListOpenPullRequests(ctx, gitClient, project)
-	if err != nil {
-		panic(err)
-	}
-	userID, err := GetCurrentUserID(PAT)
-	if err != nil {
-		// Instead of panicking, launch TUI with error message
-		RunTUIWithError(pullRequests, err.Error())
+	for tryCount < maxTries {
+		connection := azuredevops.NewPatConnection(fullUrl, PAT)
+		gitClient, err := git.NewClient(ctx, connection)
+		if err != nil {
+			if strings.Contains(err.Error(), "401") {
+				fmt.Println("PAT is invalid or expired. Please enter a new PAT.")
+				PAT, err = PromptPAT()
+				if err != nil {
+					fmt.Println("Error reading PAT:", err)
+					return
+				}
+				if err := SetPAT(PAT); err != nil {
+					fmt.Println("Error saving PAT:", err)
+					return
+				}
+				tryCount++
+				continue
+			}
+			panic(err)
+		}
+
+		pullRequests, err := ListOpenPullRequests(ctx, gitClient, project)
+		if err != nil {
+			if strings.Contains(err.Error(), "401") {
+				fmt.Println("PAT is invalid or expired. Please enter a new PAT.")
+				PAT, err = PromptPAT()
+				if err != nil {
+					fmt.Println("Error reading PAT:", err)
+					return
+				}
+				if err := SetPAT(PAT); err != nil {
+					fmt.Println("Error saving PAT:", err)
+					return
+				}
+				tryCount++
+				continue
+			}
+			panic(err)
+		}
+		userID, err := GetCurrentUserID(PAT)
+		if err != nil {
+			// Instead of panicking, launch TUI with error message
+			RunTUIWithError(pullRequests, err.Error())
+			return
+		}
+		RunTUI(pullRequests, userID)
 		return
 	}
-	RunTUI(pullRequests, userID)
 }
 
 // printPullRequest prints details of a pull request
