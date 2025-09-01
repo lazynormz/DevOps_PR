@@ -1,5 +1,7 @@
+bin/
+build/
+
 *.exe
-!bin/*.exe
 *.dll
 *.so
 *.dylib
