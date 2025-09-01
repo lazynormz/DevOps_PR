@@ -10,23 +10,23 @@ import (
 // GetCurrentUserID fetches the current user's Azure DevOps ID using the PAT
 func GetCurrentUserID(pat string, organization string) (string, error) {
 	url := fmt.Sprintf("https://vssps.dev.azure.com/%s/_apis/profile/profiles/me?api-version=7.0", organization)
-	req, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth("", pat)
+	request.SetBasicAuth("", pat)
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	response, err := client.Do(request)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to fetch user profile: status %d", resp.StatusCode)
+	if response.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to fetch user profile: status %d", response.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
