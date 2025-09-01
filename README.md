@@ -13,9 +13,11 @@ Use at your own risk. (Pretty sure it’s safe—no secrets leaking as far as I 
 
 ## 🔑 Requirements
 
-You’ll need a [Personal Access Token (PAT)])(https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows) with:
+You’ll need a Personal Access Token (PAT) with:
 
 - Code (Read)
+
+To setup a PAT in Azure DevOps, look at [this guide](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=Windows)
 
 ## 🚀 Installation
 Option 1: Download the release
