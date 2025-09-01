@@ -41,17 +41,18 @@ func voteLabel(v int) string {
 }
 
 type tuiModel struct {
-	prs        []PullRequestInfo
-	selected   int
-	showDrafts bool
-	showMine   bool
-	userID     string
-	width      int
-	height     int
+	prs             []PullRequestInfo
+	selected        int
+	showDrafts      bool
+	showMine        bool
+	showNotReviewer bool // new: show PRs where user is NOT a reviewer
+	userID          string
+	width           int
+	height          int
 }
 
 func initialModel(prs []PullRequestInfo, userID string) tuiModel {
-	return tuiModel{prs: prs, selected: 0, showDrafts: false, showMine: true, userID: userID, width: 0, height: 0}
+	return tuiModel{prs: prs, selected: 0, showDrafts: false, showMine: true, showNotReviewer: false, userID: userID, width: 0, height: 0}
 }
 
 func (m tuiModel) filteredPRs() []PullRequestInfo {
@@ -74,6 +75,36 @@ func (m tuiModel) filteredPRs() []PullRequestInfo {
 			}
 		}
 		filtered = others
+	}
+	// Filter by reviewer status
+	if m.showNotReviewer {
+		// Show PRs where user is NOT a reviewer
+		var notReviewer []PullRequestInfo
+		for _, pr := range filtered {
+			isReviewer := false
+			for _, rev := range pr.reviewers {
+				if rev.id == m.userID {
+					isReviewer = true
+					break
+				}
+			}
+			if !isReviewer {
+				notReviewer = append(notReviewer, pr)
+			}
+		}
+		filtered = notReviewer
+	} else {
+		// Show PRs where user IS a reviewer
+		var reviewerPRs []PullRequestInfo
+		for _, pr := range filtered {
+			for _, rev := range pr.reviewers {
+				if rev.id == m.userID {
+					reviewerPRs = append(reviewerPRs, pr)
+					break
+				}
+			}
+		}
+		filtered = reviewerPRs
 	}
 	return filtered
 }
@@ -100,6 +131,9 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "m":
 			m.showMine = !m.showMine
 			m.selected = 0
+		case "r":
+			m.showNotReviewer = !m.showNotReviewer
+			m.selected = 0
 		case "q", "esc", "ctrl+c":
 			return m, tea.Quit
 		}
@@ -125,9 +159,9 @@ func (m tuiModel) View() string {
 	}
 	mainArea := ""
 	if len(prs) == 0 {
-		msg := "No open pull requests."
-		if nonDraftCount == mineCount && nonDraftCount > 0 {
-			msg = "No open pull requests except your own."
+		msg := "No open pull requests where you are set as a reviewer."
+		if m.showNotReviewer {
+			msg = "No open pull requests where you are NOT set as a reviewer."
 		}
 		mainArea = lipgloss.NewStyle().Width(m.width).Height(m.height-2).Align(lipgloss.Center, lipgloss.Center).Render(msg)
 	} else {
@@ -222,7 +256,24 @@ func (m tuiModel) View() string {
 	}
 	// Instructions at the bottom
 	menuBox := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(0, 2)
-	instructions := "  ↑/↓ to navigate | d: toggle drafts | m: show/hide your own PRs | q: quit  "
+	// Styles for ON/OFF
+	onStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2")).Bold(true)  // green
+	offStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true) // red
+
+	dKey := offStyle.Render("d")
+	if m.showDrafts {
+		dKey = onStyle.Render("d")
+	}
+	mKey := offStyle.Render("m")
+	if m.showMine {
+		mKey = onStyle.Render("m")
+	}
+	rKey := offStyle.Render("r")
+	if m.showNotReviewer {
+		rKey = onStyle.Render("r")
+	}
+
+	instructions := fmt.Sprintf("  ↑/↓ to navigate | %s: toggle drafts | %s: show/hide your own PRs | %s: show PRs where you are NOT a reviewer | q: quit  ", dKey, mKey, rKey)
 	if m.width > 0 {
 		instructions = lipgloss.PlaceHorizontal(m.width, lipgloss.Center, menuBox.Render(instructions))
 	}
