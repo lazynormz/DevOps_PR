@@ -1,3 +1,9 @@
+## Requirements
 Required permissions for the PAT:
 - Code (Read)
-- Project and Team (Read)
+
+## Building
+Built using Go version 1.25.0
+```sh
+go build -o bin/AzurePR.exe
+```
