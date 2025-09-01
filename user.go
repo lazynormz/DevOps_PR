@@ -8,8 +8,7 @@ import (
 )
 
 // GetCurrentUserID fetches the current user's Azure DevOps ID using the PAT
-func GetCurrentUserID(pat string) (string, error) {
-	organization := "2care4" // TODO: optionally pass this as a parameter
+func GetCurrentUserID(pat string, organization string) (string, error) {
 	url := fmt.Sprintf("https://vssps.dev.azure.com/%s/_apis/profile/profiles/me?api-version=7.0", organization)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
