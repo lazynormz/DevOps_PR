@@ -102,7 +102,7 @@ func main() {
 			}
 			panic(err)
 		}
-		userID, err := GetCurrentUserID(PAT)
+		userID, err := GetCurrentUserID(PAT, organization)
 		if err != nil {
 			// Instead of panicking, launch TUI with error message
 			RunTUIWithError(pullRequests, err.Error())
