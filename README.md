@@ -1,18 +1,69 @@
-## What is this?
-Because Microsoft recently broke their Azure DevOps boards in regards to their PR overview, I created this little TUI that gives a quick overview of open PRs and other quick-info.
+# AzurePR TUI
+## 🤔 What is this?
 
-## Why make this?
-I was bored during the weekend and decided to use ai to create this slop of a codebase. Use at own risk (should be safe, no leaks as far as I can see)
+Microsoft broke the PR overview in Azure DevOps boards (thanks, Satya 🙃), so I hacked together a terminal UI that shows you open PRs and some quick info.
+Runs in your Windows terminal, just a single .exe.
 
-## Requirements
-Required permissions for the PAT:
+## 🛠 Why does this exist?
+
+Weekend boredom + AI-assisted chaos = this tool.
+Use at your own risk. (Pretty sure it’s safe—no secrets leaking as far as I can tell.)
+
+## 🔑 Requirements
+
+You’ll need a Personal Access Token (PAT) with:
+
 - Code (Read)
 
-## Running
-If you want to run this application, either grab the latest release, or build from source
+## 🚀 Installation
+Option 1: Download the release
 
-## Building
-Built using Go version 1.25.0
-```sh
+1) Grab the latest .exe from [Releases](https://github.com/lazynormz/DevOps_PR/releases)
+
+2) Drop it somewhere permanent (e.g. C:\Tools\AzurePR).
+
+Option 2: Build it yourself
+
+```
 go build -o bin/AzurePR.exe
 ```
+
+### Add it to PATH (recommended)
+
+So you can just type AzurePR anywhere in your terminal:
+
+1) Put AzurePR.exe in a folder like C:\Tools\AzurePR.
+
+2) Add that folder to your System PATH:
+
+    - Windows Search → “Edit system environment variables”
+
+     - Environment Variables → Path → Edit → Add C:\Tools\AzurePR
+
+Now you can run:
+```
+AzurePR
+```
+
+### (Optional) Symlink
+
+If you don’t want to mess with PATH every time:
+```
+mklink "C:\Windows\System32\AzurePR.exe" "C:\Tools\AzurePR\AzurePR.exe"
+```
+⚠️ Needs admin rights.
+
+## 🏗 Building
+
+Requires Go 1.25.0
+
+Build with:
+```
+go build -o bin/AzurePR.exe
+```
+
+# ⚠️ Notes
+
+Only tested on Windows for now.
+
+Expect some rough edges—it’s more “weekend hack” than “production-ready.”
